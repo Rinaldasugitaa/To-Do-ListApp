@@ -6,12 +6,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -22,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter<String> itemsAdapter;
     private FloatingActionButton fab;
     private ListView listView;
+    public EditText edtAdd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,36 +60,87 @@ public class MainActivity extends AppCompatActivity {
                                 itemsAdapter.notifyDataSetChanged();
                             }
                         })
-                        .setNegativeButton("Ya", null)
+                        .setNegativeButton("Tidak", null)
                         .show();
                 return true;
             }
         });
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
+                AlertDialog.Builder builder2 = new AlertDialog.Builder(MainActivity.this);
+                builder2.setMessage("Are You Sure ? ");
+                builder2.setTitle("Want To Change It ?");
+                final EditText inputfield2 = new EditText(MainActivity.this);
+                inputfield2.setText(items.get(position));
+                builder2.setView(inputfield2);
+                builder2.setPositiveButton("Edit", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String Value = inputfield2.getText().toString();
+                        items.remove(position);
+                        items.add(position, Value);
+                        sortDel();
+
+                        itemsAdapter.notifyDataSetChanged();
+                    }
+                });
+                builder2.setNegativeButton("Cancel", null);
+                builder2.show();
+            }
+        });
+    }
+    public void sortDel(){
+        SharedPreferences sh = getSharedPreferences("todo",MODE_PRIVATE);
+        SharedPreferences.Editor editor= sh.edit();
+
+        editor.clear();
+        editor.apply();
+
+        for(int i=0; i < items.size(); i++){
+            editor.putString(String.valueOf(i), items.get(i));
+        }
+
+        editor.apply();
+
     }
 
     public void initial() {
         fab = findViewById(R.id.fab);
         listView = findViewById(R.id.lv);
+
     }
 
-
     public void addtask() {
+        final View view = View.inflate(this,R.layout.edt_txt_alert, null);
+        edtAdd = view.findViewById(R.id.edt_add);
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("ayo catet!");
-        builder.setTitle("Add a New Task To Do");
-        final EditText inputField = new EditText(this);
-        builder.setView(inputField);
+        builder.setMessage("Ingin Menambah Catatan ? ");
+        builder.setTitle("Add New");
+        //final EditText inputField = new EditText(this);
+        builder.setView(view);
         builder.setPositiveButton("Add", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int which) {
-                int new_key = items.size();
-                String item = inputField.getText().toString();
+                int newKey = items.size();
+                String input = edtAdd.getText().toString();
+                boolean isEmptyInput = false;
 
-                items.add(new_key, item);
-                addToSh(new_key, item);
+                if (TextUtils.isEmpty(edtAdd.getText().toString())){
+                    isEmptyInput = true;
+                    edtAdd.setError("Reeminder Tidak Boleh Kosong");
+                    //Toast.makeText(getApplicationContext(),"Reeminder Tidak Boleh Kosong", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    items.add(newKey, input);
+                    addToSh(newKey, input);
+                    itemsAdapter.notifyDataSetChanged();
+                    Toast.makeText(getApplicationContext(),"Data telah di tambahkan", Toast.LENGTH_SHORT).show();
+                }
             }
         });
-        builder.setNegativeButton("cancel", null);
+        builder.setNegativeButton("Cancel", null);
 
         builder.create().show();
     }
@@ -98,8 +152,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sortSP(){
-        SharedPreferences sp = getSharedPreferences("todo",MODE_PRIVATE);
-        SharedPreferences.Editor editor= sp.edit();
+        SharedPreferences sh = getSharedPreferences("todo",MODE_PRIVATE);
+        SharedPreferences.Editor editor= sh.edit();
         editor.clear();
         editor.apply();
         for(int i = 0; i < items.size();i++){
@@ -127,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
     }
 
+
     private void ShowDialog() {
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setTitle("Konfirmasi Keluar")
@@ -151,7 +206,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             ShowDialog();
-
         }
         return true;
     }
